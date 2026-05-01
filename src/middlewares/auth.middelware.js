@@ -1,7 +1,7 @@
 import { asyncHandler } from '../utils/ayncHandler.js'
-import { ApiError} from '../utils/ApiError.js'
+import { ApiError } from '../utils/ApiError.js'
 import jwt from 'jsonwebtoken'
-import {User} from '../models/user.model.js'
+import { User } from '../models/user.model.js'
 
 export const verifyJWT = asyncHandler(async (req, res, next) => {
     try {
@@ -15,7 +15,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
             '-password -refreshToken'
         )
         if (!user) {
-            throw new ApiError(401, 'Invalid Access     Token')
+            throw new ApiError(401, 'Invalid Access Token')
         }
         req.user = user
         next()
