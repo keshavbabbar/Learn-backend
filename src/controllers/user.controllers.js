@@ -4,7 +4,6 @@ import { User } from '../models/user.model.js'
 import { uploadCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from 'jsonwebtoken'
-import { validateHeaderName } from "http";
 import mongoose from "mongoose";
 
 
@@ -133,8 +132,8 @@ const logoutUser = asyncHandler(async (req, res) => {
    await User.findByIdAndUpdate(
       req.user._id,
       {
-         $set: {
-            refreshToken: undefined
+         $unset: {
+            refreshToken: 1,
          }
       },
       {
@@ -304,42 +303,42 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
    if (!username.trim()) {
       throw new ApiError(400, 'username is missing')
    }
-
    const channel = await User.aggregate([
 
       {
          $match: {
-            username: username?.toLowerCase()
+            userName: username?.toLowerCase()
 
          }
+
       },
       {
          $lookup: {
             from: 'subscriptions',
             localField: "_id",
             foreignField: "channel",
-            as: "subscriber"
+            as: "subscribers"
          }
       },
       {
          $lookup: {
             from: 'subscriptions',
             localField: "_id",
-            foreignField: "channel",
+            foreignField: "subscriber",
             as: "subscriberTo"
          }
       },
       {
          $addFields: {
             subscriberCount: {
-               $size: "subscribers"
+               $size: "$subscribers"
             },
             channelSubscribedToCount: {
-               $size: "subscriberTo"
+               $size: "$subscriberTo"
             },
             isSubscribed: {
                $cond: {
-                  if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+                  if: { $in: [req.user?._id || null, "$subscribers.subscriber"] },
                   then: true,
                   else: false
                }
@@ -349,7 +348,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       {
          $project: {
             fullName: 1,
-            username: 1,
+            userName: 1,
             subscriberCount: 1,
             channelSubscribedToCount: 1,
             isSubscribed: 1,
@@ -364,7 +363,6 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
    ])
 
-   console.log(channel)
    if (!channel?.length) {
       throw new ApiError(404, "channel does not exist")
    }
